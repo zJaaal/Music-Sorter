@@ -39,7 +39,7 @@ namespace MusicSorter
 
             List<List<string>> filesChunks = files.ChunkBy<string>(listDivision);
 
-            Log.Verbose("Mapping Tracks...");
+            Log.Information("Mapping Tracks...");
             foreach (List<string> listFile in filesChunks)
             {
                 tasks.Add(Task.Run(() =>
@@ -47,7 +47,9 @@ namespace MusicSorter
                     foreach (string file in listFile)
                     {
                         var tfile = TagLib.File.Create(file);
-                        allTracks.Add(new Track(tfile.Tag.Album, tfile.Tag.JoinedArtists, tfile.Tag.Title, Path.GetFullPath(file)));
+
+                        lock (allTracks)
+                            allTracks.Add(new Track(tfile.Tag.Album, tfile.Tag.JoinedArtists, tfile.Tag.Title, Path.GetFullPath(file)));
                     }
                 }));
             }
@@ -73,10 +75,15 @@ namespace MusicSorter
                     {
                         track.NewDirectory = mainDirectory + track.Artist + "//";
 
+                        if (track.Artist is null)
+                            track.Artist = "Unknown";
+
                         if (artists.Contains(track.Artist))
                             continue;
 
+                        lock(artists)
                         artists.Add(track.Artist);
+
                         CreateArtistDirectory(mainDirectory, track.Artist);
                     }
                 }));
@@ -89,6 +96,9 @@ namespace MusicSorter
 
         public static void CreateArtistDirectory(string mainDirectory, string artist)
         {
+            if (artist.Contains("\""))
+                artist = artist.Replace('\"', ' ');
+
             Directory.CreateDirectory(mainDirectory + artist + "//");
         }
     }
