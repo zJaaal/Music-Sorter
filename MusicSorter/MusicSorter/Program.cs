@@ -7,6 +7,7 @@ public class Program
 {
     private static string RootDirectory { get; set; }
     private static string NewRootDirectory { get; set; }
+    private static Dictionary<string, List<Track>> ArtistDictionary { get; set; }
     private static List<string> AllFiles {  get; set; }
     private static List<Track> AllTracks { get; set; }
     private static List<string> AllArtists { get; set; }
@@ -19,7 +20,7 @@ public class Program
             .WriteTo.Console();
         Log.Logger = logger.CreateLogger();
 
-        Log.Verbose("Welcome to Music Sorter! v0.0.3");
+        Log.Verbose("Welcome to Music Sorter! v0.0.4");
         Log.Verbose("This program will read every ID3 Tag in your music and will sort it by artists and their songs by album.");
         Log.Verbose("In order to scan your music. Please enter the root directory where all your tracks are.");
 
@@ -48,7 +49,8 @@ public class Program
 
        AllFiles = MusicSorter.MapFiles(RootDirectory);
        AllTracks = await MusicSorter.MapTracks(AllFiles);
-        AllArtists = await MusicSorter.MapArtists(AllTracks, NewRootDirectory);
+       AllArtists = await MusicSorter.MapArtists(AllTracks, NewRootDirectory);
+       ArtistDictionary = await MusicSorter.SortTracksByArtist(AllTracks, AllArtists);
 
         sw.Stop();
         Log.Verbose(sw.ElapsedMilliseconds.ToString());

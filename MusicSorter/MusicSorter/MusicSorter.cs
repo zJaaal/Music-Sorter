@@ -93,7 +93,32 @@ namespace MusicSorter
 
             return artists;
         }
+        public static async Task<Dictionary<string, List<Track>>> SortTracksByArtist(List<Track> tracks, List<string> artist)
+        {
+            Dictionary<string, List<Track>> artistsDictionary = new();
+            List<List<string>> artistByChunk = artist.ChunkBy<string>(artist.Count() / 4);
+            List<Task> tasks = new();
 
+            Log.Verbose("Sorting tracks by artist...");
+            foreach (List<string> artistList  in artistByChunk)
+            {
+                tasks.Add(Task.Run(() =>
+                {
+                    foreach (string artist in artistList)
+                    {
+                        Log.Verbose($"Sorting {artist}");
+                        List<Track> tracksList = tracks.Where(x => x.Artist.Equals(artist)).ToList();
+                        Log.Verbose($"{tracksList.Count()} songs found");
+
+                        lock (artistsDictionary)
+                            artistsDictionary.Add(artist,tracksList);
+                    }
+                }));
+            }
+            Task.WaitAll(tasks.ToArray());
+
+            return artistsDictionary;
+        }
         public static void CreateArtistDirectory(string mainDirectory, string artist)
         {
             if (artist.Contains("\""))
