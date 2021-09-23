@@ -5,6 +5,10 @@ using System.Diagnostics;
 namespace MusicSorter;
 public class Program
 {
+    /* BUGS
+     * Some Artists Directories might duplicate and get corrupted.
+     * Sometimes it just splits in 2 different Artist
+     */ 
     private static string RootDirectory { get; set; }
     private static string NewRootDirectory { get; set; }
     private static Dictionary<string, List<Track>> ArtistDictionary { get; set; }
@@ -20,7 +24,7 @@ public class Program
             .WriteTo.Console();
         Log.Logger = logger.CreateLogger();
 
-        Log.Verbose("Welcome to Music Sorter! v0.0.4");
+        Log.Verbose("Welcome to Music Sorter! v0.0.7");
         Log.Verbose("This program will read every ID3 Tag in your music and will sort it by artists and their songs by album.");
         Log.Verbose("In order to scan your music. Please enter the root directory where all your tracks are.");
 
@@ -51,6 +55,7 @@ public class Program
        AllTracks = await MusicSorter.MapTracks(AllFiles);
        AllArtists = await MusicSorter.MapArtists(AllTracks, NewRootDirectory);
        ArtistDictionary = await MusicSorter.SortTracksByArtist(AllTracks, AllArtists);
+       await MusicSorter.SortByAlbum(ArtistDictionary, AllArtists);
 
         sw.Stop();
         Log.Verbose(sw.ElapsedMilliseconds.ToString());
