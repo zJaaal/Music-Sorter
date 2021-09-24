@@ -51,15 +51,15 @@ namespace MusicSorter
 
         public static async Task<List<Track>> MapTracks(List<string> files)
         {
-            if(files.Count() >= 4)
+            Log.Information("Mapping Tracks...");
+
+            if (files.Count() >= 4)
             {
                 List<Track> allTracks = new();
                 List<Task> tasks = new();
                 int listDivision = files.Count() / 4;
 
                 List<List<string>> filesChunks = files.ChunkBy<string>(listDivision);
-
-                Log.Information("Mapping Tracks...");
                 foreach (List<string> listFile in filesChunks)
                 {
                     tasks.Add(Task.Run(() =>
@@ -104,6 +104,7 @@ namespace MusicSorter
                     }
                 }
 
+                Log.Information($"{allTracks.Count()} tracks Mapped");
                 return allTracks;
             }
             
@@ -111,13 +112,14 @@ namespace MusicSorter
 
         public static async Task<List<string>> MapArtists(List<Track> tracks, string mainDirectory)
         {
-            if(tracks.Count() >= 4)
+            Log.Verbose("Mapping Artists...");
+
+            if (tracks.Count() >= 4)
             {
                 List<List<Track>> tracksByChunk = tracks.ChunkBy<Track>(tracks.Count() / 4);
                 List<string> artists = new();
                 List<Task> tasks = new();
 
-                Log.Verbose("Mapping Artists...");
                 foreach (List<Track> trackslist in tracksByChunk)
                 {
                     tasks.Add(Task.Run(() =>
@@ -136,8 +138,6 @@ namespace MusicSorter
 
                             lock (artists)
                                 artists.Add(track.Artist);
-
-                            Log.Verbose(track.Artist);
                         }
                     }));
                 }
@@ -149,6 +149,7 @@ namespace MusicSorter
             else
             {
                 List<string> artists = new();
+
                 foreach (Track track in tracks)
                 {
 
@@ -163,6 +164,7 @@ namespace MusicSorter
                         artists.Add(track.Artist);
 
                 }
+                Log.Information($"{artists.Count()} artists found");
                 return artists;
             }
             
@@ -170,13 +172,13 @@ namespace MusicSorter
 
         public static async Task<Dictionary<string, List<Track>>> SortTracksByArtist(List<Track> tracks, List<string> artists)
         {
-            if(artists.Count() >= 4)
+            Log.Verbose("Sorting tracks by artist...");
+            if (artists.Count() >= 4)
             {
                 Dictionary<string, List<Track>> artistsDictionary = new();
                 List<List<string>> artistByChunk = artists.ChunkBy<string>(artists.Count() / 4);
                 List<Task> tasks = new();
 
-                Log.Verbose("Sorting tracks by artist...");
                 foreach (List<string> artistList in artistByChunk)
                 {
                     tasks.Add(Task.Run(() =>
