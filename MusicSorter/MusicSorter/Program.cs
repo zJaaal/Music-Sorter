@@ -5,10 +5,6 @@ using System.Diagnostics;
 namespace MusicSorter;
 public class Program
 {
-    /* BUGS
-     * Some Artists Directories might duplicate and get corrupted.
-     * Sometimes it just splits in 2 different Artist
-     */ 
     private static string RootDirectory { get; set; }
     private static string NewRootDirectory { get; set; }
     private static Dictionary<string, List<Track>> ArtistDictionary { get; set; }
@@ -19,18 +15,19 @@ public class Program
     static async Task Main(string[] args)
     {
         Stopwatch sw = new Stopwatch();
+
         var logger = new LoggerConfiguration()
             .MinimumLevel.Verbose()
             .WriteTo.Console();
         Log.Logger = logger.CreateLogger();
 
-        Log.Verbose("Welcome to Music Sorter! v0.0.7");
+        Log.Verbose("Welcome to Music Sorter! v0.1.0");
         Log.Verbose("This program will read every ID3 Tag in your music and will sort it by artists and their songs by album.");
         Log.Verbose("In order to scan your music. Please enter the root directory where all your tracks are.");
 
         do
         {
-            RootDirectory = Console.ReadLine() ;
+            RootDirectory = Console.ReadLine();
             if (string.IsNullOrWhiteSpace(RootDirectory))
                 Log.Warning("Please enter a Directory");
 
@@ -38,26 +35,33 @@ public class Program
 
         sw.Start();
 
-        Log.Verbose("The program will scan " + RootDirectory + "//" + " looking for music.");
-        RootDirectory = RootDirectory + "//";
+        Log.Verbose("The program will scan " + RootDirectory + @"\" + " looking for music.");
+        RootDirectory +=  @"\";
+
+        AllFiles = MusicSorter.MapFiles(RootDirectory);
 
         try
         {
-            if(!Directory.Exists(NewRootDirectory = RootDirectory + "SortedMusic//"))
-                Directory.CreateDirectory("SortedMusic//" );
+            if(!Directory.Exists(NewRootDirectory = RootDirectory + @"SortedMusic\"))
+                Directory.CreateDirectory(NewRootDirectory);
         }
         catch(Exception e)
         {
             Console.WriteLine("The entered directory could be invalid:" + e.ToString());
         }
 
-       AllFiles = MusicSorter.MapFiles(RootDirectory);
        AllTracks = await MusicSorter.MapTracks(AllFiles);
        AllArtists = await MusicSorter.MapArtists(AllTracks, NewRootDirectory);
        ArtistDictionary = await MusicSorter.SortTracksByArtist(AllTracks, AllArtists);
        await MusicSorter.SortByAlbum(ArtistDictionary, AllArtists);
 
         sw.Stop();
-        Log.Verbose(sw.ElapsedMilliseconds.ToString());
+        TimeSpan ts = sw.Elapsed;
+
+        string elapsedTime = String.Format("{0:00}:{1:00}:{2:00}.{3:00}",
+            ts.Hours, ts.Minutes, ts.Seconds,
+            ts.Milliseconds / 10);
+
+        Log.Verbose("Completed in: {0}",elapsedTime);
     }
 }

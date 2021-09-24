@@ -20,9 +20,23 @@ namespace MusicSorter
             try
             {
                 Log.Information("Mapping Files...");
-                files = Directory.GetFiles(directory, "*.*", SearchOption.TopDirectoryOnly)
+                if (Directory.Exists(directory + @"SortedMusic\"))
+                {
+                    files = Directory.GetFiles(directory, "*.*", SearchOption.TopDirectoryOnly)
                                  .Where(s => Allowed.Contains(Path.GetExtension(s).TrimStart('.').ToLowerInvariant()))
                                  .ToList();
+                }
+                else
+                {
+                    files = Directory.GetFiles(directory, "*.*", SearchOption.AllDirectories)
+                                 .Where(s => Allowed.Contains(Path.GetExtension(s).TrimStart('.').ToLowerInvariant()))
+                                 .ToList();
+                }
+
+                if (files.Count() is 0)
+                {
+                    Environment.Exit(1);
+                }
 
                 Log.Information(files.Count.ToString() + " files found");
             }
@@ -76,9 +90,17 @@ namespace MusicSorter
                 List<Track> allTracks = new();
                 foreach (string file in files)
                 {
-                    var tfile = TagLib.File.Create(file);
+                    try
+                    {
+                        var tfile = TagLib.File.Create(file);
 
-                    allTracks.Add(new Track(tfile.Tag.Album.Trim(), tfile.Tag.JoinedArtists.Trim(), tfile.Tag.Title.Trim(), Path.GetFullPath(file)));
+                        allTracks.Add(new Track(tfile.Tag.Album.Trim(), tfile.Tag.JoinedArtists.Trim(), tfile.Tag.Title.Trim(), Path.GetFullPath(file)));
+                    }
+                    catch (TagLib.CorruptFileException ex)
+                    {
+                        Log.Error($"ID3 Tag not found for: {Path.GetFileName(file)}");
+                        continue;
+                    }
                 }
 
                 return allTracks;
@@ -107,12 +129,14 @@ namespace MusicSorter
 
                             track.NewDirectory = CreateArtistDirectory(mainDirectory, track.Artist);
 
-                            if (artists.Contains(track.Artist))
-                                continue;
+                            lock(artists)
+                                if (artists.Exists( x => x.ToLower().Equals(track.Artist.ToLower())))
+                                    continue;
 
                             lock (artists)
                                 artists.Add(track.Artist);
 
+                            Log.Verbose(track.Artist);
                         }
                     }));
                 }
@@ -142,6 +166,7 @@ namespace MusicSorter
             }
             
         }
+
         public static async Task<Dictionary<string, List<Track>>> SortTracksByArtist(List<Track> tracks, List<string> artists)
         {
             if(artists.Count() >= 4)
@@ -157,7 +182,7 @@ namespace MusicSorter
                     {
                         foreach (string artist in artistList)
                         {
-                            List<Track> tracksList = tracks.Where(x => x.Artist.Equals(artist)).ToList();
+                            List<Track> tracksList = tracks.Where(x => x.Artist.Equals(artist, StringComparison.CurrentCultureIgnoreCase)).ToList();
 
                             lock (artistsDictionary)
                             {
@@ -223,8 +248,7 @@ namespace MusicSorter
                         }
                         catch (Exception ex)
                         {
-                            Log.Error(ex.ToString());
-                            Log.Error(Path.GetFileName(t.CurrentDirectory));
+                            Log.Error($"There's a problem with {t.NewDirectory} please extract the files, erase it and try again.");
                         }
                         finally
                         {
@@ -240,12 +264,12 @@ namespace MusicSorter
             if (regex.IsMatch(artist))
                 artist = regex.Replace(artist, "");
 
-            if (Directory.Exists(mainDirectory + artist + "//"))
-                return mainDirectory + artist + "//";
+            if (Directory.Exists(mainDirectory + artist + @"\"))
+                return mainDirectory + artist + @"\";
 
-            Directory.CreateDirectory(mainDirectory + artist + "//");
+            Directory.CreateDirectory(mainDirectory + artist + @"\");
 
-            return mainDirectory + artist + "//";
+            return mainDirectory + artist + @"\";
         }
         public static string CreateAlbumDirectory(string mainDirectory, string album)
         {
@@ -255,12 +279,12 @@ namespace MusicSorter
             if (string.IsNullOrEmpty(album))
                 album = "Unknown";
 
-            if (Directory.Exists(mainDirectory + album + "//"))
-                return mainDirectory + album + "//";
+            if (Directory.Exists(mainDirectory + album + @"\"))
+                return mainDirectory + album + @"\";
 
-            Directory.CreateDirectory(mainDirectory + album + "//");
+            Directory.CreateDirectory(mainDirectory + album + @"\");
 
-            return mainDirectory + album + "//";
+            return mainDirectory + album + @"\";
         }
     }
 }
