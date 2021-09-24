@@ -6,4 +6,4 @@ Please make a backup of your music before using my program (I do not have respon
 
 # Using
 
-After initializing the program, Copy and Paste the Root Directory where your music is. It will only read Music on that directory, that means, if you have music on subfolders, those will not be sorted.
+After initializing the program, Copy and Paste the Root Directory where your music is.
