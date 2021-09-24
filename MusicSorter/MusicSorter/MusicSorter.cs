@@ -35,6 +35,7 @@ namespace MusicSorter
 
                 if (files.Count() is 0)
                 {
+                    Log.Information("Couldn't find music files.");
                     Environment.Exit(1);
                 }
 
